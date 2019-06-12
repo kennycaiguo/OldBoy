@@ -43,3 +43,12 @@ content = file_object.write('你好')
 # 关闭文件
 file_object.close()
 '''
+
+f = open('a.txt', mode='wb')
+# 1. 把要写入的字符串转换成二进制
+data = '我好困'
+content = data.encode('utf-8')
+
+# 2. 再将二进制写到文件中
+f.write(content)  # wb打开文件，则write传入的是二进制
+f.close()
