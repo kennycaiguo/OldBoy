@@ -6,7 +6,9 @@
 
 
 class Dog:
-    def __init__(self, name, breed,attack_val):
+    role = 'dog'
+
+    def __init__(self, name, breed, attack_val):
         self.name = name
         self.breed = breed
         self.hp = 100
@@ -18,20 +20,22 @@ class Dog:
 
 
 class Person:
-    def __init__(self,name,age,sex,attack_val):
+    role = 'person'
+    
+    def __init__(self, name, age, sex, attack_val):
         self.name = name
         self.age = age
         self.sex = sex
         self.hp = 100
         self.attack_val = attack_val
 
-    def attack(self,dog):
+    def attack(self, dog):
         dog.hp -= self.attack_val
         print("%s人打了狗%s一棒，狗掉了%s的血，还有%s血量" % (self.name, dog.name, self.attack_val, dog.hp,))
 
 
-d1 = Dog('mike','二哈',30)
-p1 = Person('Owen',23,"M",40)
+d1 = Dog('mike', '二哈', 30)
+p1 = Person('Owen', 23, "M", 40)
 d1.bite(p1)
 p1.attack(d1)
 d1.bite(p1)
