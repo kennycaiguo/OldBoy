@@ -10,13 +10,16 @@ from datetime import datetime
 
 
 class School(object):
-    def __init__(self, name, addr):
+    """总部/学校类"""
+
+    def __init__(self, name, addr, website):
         self.name = name
         self.addr = addr
+        self.website = website
         self.branches = {}
         self.__staff_list = []
-        self.__school_balance = 100000
-        print("初始化校区[%s],地址:%s..." % (self.name, self.addr))
+        self.balance = 0
+        print("初始化校区【%s】,地址:%s..." % (self.name, self.addr))
 
     def pay_roll(self, staff_list):
         total = 0
@@ -47,7 +50,7 @@ class School(object):
         print(create_time + " 员工注册成功，员工姓名：【%s】，年龄：【%s】，职务：【%s】，校区：【%s】" % (
             staff_obj.name, staff_obj.age, staff_obj.position, self.name))
 
-    def count_total_balance(self):
+    def count_total_revenue(self):
         balance = self.__school_balance
         for branch_name, branch_obj in self.branches.items():
             balance += branch_obj.__school_balance
@@ -55,6 +58,8 @@ class School(object):
 
 
 class BranchSchool(School):
+    """分校"""
+
     def __init__(self, name, addr, head_quater_obj):
         super().__init__(name, addr)
         self.head_quater = head_quater_obj
@@ -62,29 +67,37 @@ class BranchSchool(School):
 
 
 class Course(object):
+    """课程类"""
+
     def __init__(self, name, price, outline):
         self.name = name
-        self.__price = price
+        self.price = price
         self.outline = outline
-
-    def get_course_price(self):
-        return self.__price
-
-    def update_course_price(self, price):
-        self.__price = price
+        print("创建了课程【%s】，学费【%s】" % (name, price))
 
 
 class Class(object):
-    def __init__(self, class_num, start_date, course_obj, school_obj):
-        self.class_num = class_num
-        self.start_date = start_date
-        self.course_obj = course_obj
-        self.school_obj = school_obj
-        self.stu_list = []
-        print("校区[%s]开设了[%s]课程第[%s]班,开班日期[%s]..." % (school_obj.name, course_obj.name, class_num, start_date))
+    """班级"""
 
-    def get_class_name(self):
-        return "%s-%s-s%s期" % (self.school_obj.name, self.course_obj.name, self.class_num)
+    def __init__(self, course_obj, semester, school_obj):
+        self.course_obj = course_obj
+        self.semester = semester
+        self.school_obj = school_obj
+        self.stu_list = []  # 存放学员列表
+        print("校区【%s】创建了班级【%s】学期【%s】..." % (school_obj.name, course_obj.name, semester))
+
+    def stu_transfer(self, stu_obj, new_class_obj):
+        """
+        学员转校
+        :param stu_obj: 学员对象
+        :param new_class_obj: 转到新的班级的对象
+        :return:
+        """
+        pass
+
+    def __str__(self):
+        """返回一个对象的描述信息"""
+        return "%s-%s-%s学期" % (self.school_obj.name, self.course_obj.name, self.semester)
 
     def new_student_enrollment(self, student_obj):
         self.stu_list.append(student_obj)
@@ -102,82 +115,94 @@ class Class(object):
         print("[%s]校区当前学院数：%s" % (self.school_obj.name, len(self.school_obj.student_objs)))
 
 
-class Student(Class):
-    def __init__(self, name, age, degree, class_obj, balance):
+class Student(object):
+    """学员"""
+
+    def __init__(self, name, age, balance, class_obj):
         self.name = name
         self.age = age
-        self.degree = degree
+        self.balance = balance
         self.class_obj = class_obj
-        self.__balance = balance
 
-    def pay_tuition(self):
-        self.__balance -= self.course_obj.price
-        self.school_obj.balance += self.course_obj.price
-        create_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print(create_time + "[%s]学员交学费" % (self.name,))
-        return self.get_balance()
+        # 加入班级
+        class_obj.stu_list.append(self)
+        # 交学费
+        class_obj.school_obj.balance += class_obj.course_obj.price
+        self.balance -= class_obj.course_obj.price
+        print('班级【%s】加入了新学员【%s】，交了学费【%s】' % (class_obj, name, class_obj.course_obj.price,))
 
-    def get_balance(self):
-        return self.__balance
+    def punch_card(self):
+        ctime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print("%s：学员在班级【%s】上课了。。。" % (ctime, self.class_obj))
 
 
 class Staff(object):
-    def __init__(self, name, age, salary, dept, school_obj, position):
+    """员工"""
+
+    def __init__(self, name, age, balance, salary, position, dept, school_obj):
         self.name = name
         self.age = age
+        self.balance = balance
+        self.salary = salary
         self.position = position
-        self.__salary = salary
         self.dept = dept
         self.school_obj = school_obj
+
+    def punch_card(self):
+        pass
 
     def count_school_balance(self):
         return self.school_obj.school_balance
 
-    def get_salary(self):
-        return self.__salary
-
 
 class Teacher(Staff):
-    def __init__(self, name, age, salary, dept, school_obj):
-        super().__init__(name, age, salary, dept, school_obj, position='teacher')
+    def __init__(self, name, age, balance, salary, position, dept, school_obj, course_obj):
+        super().__init__(name, age, balance, salary, position, dept, school_obj)
+        self.course_obj = course_obj  # 老师可以讲的课程
 
-    def teaching(self, course_obj):
-        print("[%s]老师正在教授[%s]" % (self.name, course_obj.name))
+    def teach_class(self, class_obj, day):
+        print("【%s】老师正在班级【%s】上第【%s】天课ing" % (self.name, class_obj, day))
 
 
 if __name__ == '__main__':
-    head_quater = School("崇仁路小学", "硚口区崇仁路")
-    staff1 = Staff('Sand', 33, 3000, '校长办公室', head_quater, "校长")
-    staff2 = Staff('Summery', 33, 3000, '政教办公室', head_quater, '主任')
-    staff3 = Staff("Cathy", 29, 1000, '财务办公室', head_quater, '财务')
-    t1 = Teacher('王泽宇', 33, 9000, '语文组', head_quater)
-    t2 = Teacher('雷锋', 33, 10000, '英语组', head_quater)
-    t3 = Teacher('二蛋', 33, 9000, '数学组', head_quater)
-    head_quater.new_staff_enrollment(staff1)
-    head_quater.new_staff_enrollment(staff2)
-    head_quater.new_staff_enrollment(staff3)
-    head_quater.new_staff_enrollment(t1)
-    head_quater.new_staff_enrollment(t2)
-    head_quater.new_staff_enrollment(t3)
+    # 创建校区
+    head_quater = School("崇仁路小学", "硚口区崇仁路", "master.com")
+    sh1_school = School("崇仁路小学汉西分校", "硚口区汉西路", "master.com")
+    sh2_school = School("崇仁路小学古田分校", "硚口区古田", "master.com")
+    sz1_school = School("崇仁路小学洪山分校", "洪山亚贸", "master.com")
+    sz2_school = School("崇仁路小学青山分校", "青山八大家", "master.com")
 
-    b1 = BranchSchool('崇仁路小学汉西分校', '硚口区汉西路', head_quater)
-    staff4 = Staff("VC", 29, 2000, '总务处', b1, "校长")
-    staff5 = Staff("二哈", 49, 800, '保卫处', b1, "门房")
-    staff6 = Staff("赵卫国", 39, 1000, '后勤', b1, "厨师")
-    t4 = Teacher('黄潇', 23, 9000, '体育组', b1)
-    t5 = Teacher('催锋', 53, 10000, '英语组', b1)
-    t6 = Teacher('鬼见愁', 33, 7000, '数学组', b1)
-    t7 = Teacher('李宗盛', 37, 8000, '音乐组', b1)
-    b1.new_staff_enrollment(staff4)
-    b1.new_staff_enrollment(staff5)
-    b1.new_staff_enrollment(staff6)
-    b1.new_staff_enrollment(t4)
-    b1.new_staff_enrollment(t5)
-    b1.new_staff_enrollment(t6)
-    b1.new_staff_enrollment(t7)
+    # 创建课程
+    py_course = Course("Python", 21800, None)
+    linux_course = Course("Python", 19800, None)
+    test_course = Course("Python", 19800, None)
+    go_course = Course("Python", 22800, None)
 
-    head_quater.count_staff_num()
-    b1.count_staff_num()
+    # 创建班级
+    py_24 = Class(py_course, 24, head_quater)
+    py_12 = Class(py_course, 12, sh1_school)
+    linux_63 = Class(linux_course, 63, sz1_school)
+    go_5 = Class(go_course, 5, head_quater)
 
-    head_quater.count_total_balance()
-    b1.count_total_balance()
+    # 创建员工、老师、学员
+    s1 = Staff('Sand', 33, 0, 3000, "校长", '校长办公室', head_quater)
+    s2 = Staff('Summery', 33, 0, 3000, '主任', '政教办公室', head_quater)
+    s3 = Staff("Cathy", 29, 0, 1000, '财务', '财务办公室', head_quater)
+    s4 = Staff("VC", 29, 0, 2000, "校长", '总务处', sh1_school)
+    s5 = Staff("二哈", 49, 0, 800, "门房", '保卫处', sz1_school)
+    s6 = Staff("赵卫国", 39, 0, 1000, "厨师", '后勤', sz2_school)
+
+    t1 = Teacher('王泽宇', 33, 0, 9000, "讲师", '语文组', sh1_school, py_course)
+    t2 = Teacher('雷锋', 33, 0, 10000, "讲师", '英语组', sh1_school, go_course)
+    t3 = Teacher('二蛋', 33, 0, 9000, "讲师", '数学组', sz1_school, linux_course)
+    t4 = Teacher('黄潇', 23, 0, 9000, "讲师", '体育组', sh2_school, linux_course)
+    t5 = Teacher('催锋', 53, 0, 10000, "讲师", '英语组', sh2_school, test_course)
+    t6 = Teacher('鬼见愁', 33, 0, 7000, "讲师", '数学组', sz2_school, test_course)
+    t7 = Teacher('李宗盛', 37, 0, 8000, "讲师", '音乐组', sz2_school, py_course)
+
+    stu1 = Student("春生", 22, 50000, py_24)
+    stu2 = Student("black girl", 26, 30000, go_5)
+    stu3 = Student("小强", 22, 35000, go_5)
+    stu3 = Student("小虎", 28, 38000, linux_63)
+
+    print(head_quater.balance)
