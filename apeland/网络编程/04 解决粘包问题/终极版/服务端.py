@@ -6,6 +6,8 @@
 # @Project : OldBoy
 import socket
 import subprocess
+import struct
+import json
 
 phone = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 phone.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -25,17 +27,33 @@ while True:  # 链接循环
             print("客户端的数据", cmd)
 
             # 2、 执行命令，拿到结果
-            obj = subprocess.Popen(cmd.decode('utf-8'), shell=True,  # linux是utf-8编码，windows是gbk编码
+            obj = subprocess.Popen(cmd.decode('gbk'), shell=True,  # linux是utf-8编码，windows是gbk编码
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
             stdout = obj.stdout.read()
             stderr = obj.stderr.read()
 
             # 3、 把命令的结果返回给客户端
+            # 第一步： 制作固定长度的包头
+            header_dic = {
+                'filename': 'a.txt',
+                'md5': 'fsdafjsalj',
+                'total_size': len(stdout) + len(stderr)
+            }
 
-            print(len(stdout), len(stderr))
-            conn.send(stdout + stderr)  # + 号是一个可以优化的点
-        except ConnectionResetError:
+            header_json = json.dumps(header_dic)
+            header_bytes = header_json.encode('gbk')
+
+            # 第二步：先发报头的长度
+            conn.send(struct.pack('i', len(header_bytes)))
+
+            # 第三步： 再发送报头
+            conn.send(header_bytes)
+
+            # 第四步： 再发送真是的数据
+            conn.send(stdout)
+            conn.send(stderr)
+        except ConnectionResetError:  # 使用户Windows操作系统
             break
     conn.close()
 phone.close()

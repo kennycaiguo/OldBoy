@@ -6,6 +6,7 @@
 # @Project : OldBoy
 import socket
 import subprocess
+import struct
 
 phone = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 phone.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -25,17 +26,24 @@ while True:  # 链接循环
             print("客户端的数据", cmd)
 
             # 2、 执行命令，拿到结果
-            obj = subprocess.Popen(cmd.decode('utf-8'), shell=True,  # linux是utf-8编码，windows是gbk编码
+            obj = subprocess.Popen(cmd.decode('gbk'), shell=True,  # linux是utf-8编码，windows是gbk编码
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
             stdout = obj.stdout.read()
             stderr = obj.stderr.read()
 
             # 3、 把命令的结果返回给客户端
+            # 第一步： 制作固定长度的包头
+            total_size = len(stdout) + len(stderr)
+            header = struct.pack('i', total_size)
 
-            print(len(stdout), len(stderr))
-            conn.send(stdout + stderr)  # + 号是一个可以优化的点
-        except ConnectionResetError:
+            # 第二步：把报头（固定长度）发送给客户端
+            conn.send(header)
+
+            # 第三步： 再发送真是的数据
+            conn.send(stdout)
+            conn.send(stderr)
+        except ConnectionResetError:  # 使用户Windows操作系统
             break
     conn.close()
 phone.close()
